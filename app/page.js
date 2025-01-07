@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import faqs from '@/data/faqs.json'
+import { getDailyPrompt } from "@/actions/public"; 
 
 const features = [
   {
@@ -27,9 +28,8 @@ const features = [
   },
 ];
 
-
-export default function Home() {
-  const advice = null;
+export default async function Home() {
+  const advice = await getDailyPrompt();
   return (
     <div className="relative container mx-auto px-4 pt-16 pb-16">
       {/* Hero Section */}
