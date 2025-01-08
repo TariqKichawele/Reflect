@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getJournalEntry } from '@/actions/journal';
 import { Badge } from '@/components/ui/badge';
+import EditButton from './_components/EditButton';
+import DeleteDialog from './_components/DeleteDialog';
 
 const JournalEntryPage = async ({ params }) => {
     const { id } = await params;
@@ -42,8 +44,8 @@ const JournalEntryPage = async ({ params }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        EditButton
-                        DeleteButton
+                        <EditButton entryId={entry.id} />
+                        <DeleteDialog entryId={entry.id} />
                     </div>
                 </div>
 

@@ -106,6 +106,7 @@ const JournalEntry = () => {
             fetchEntry(editId);
         } else {
             setIsEditMode(false);
+            fetchDraft();
         }
     }, [editId]);
 
@@ -151,6 +152,7 @@ const JournalEntry = () => {
             ...data, 
             moodScore: mood.score,
             moodQuery: mood.pixabayQuery,
+            ...(isEditMode && { id: editId }),
         });
     });
 
