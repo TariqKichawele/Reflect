@@ -94,13 +94,13 @@ const JournalEntry = () => {
             router.push(
                 `/collection/${actionResult.collectionId ? actionResult.collectionId : "unorganized"}`
             )
+
+            toast.success(`Entry ${isEditMode ? "updated" : "created"} successfully`);
         };
-        toast.success(`Entry ${isEditMode ? "updated" : "created"} successfully`);
     }, [actionResult, actionLoading]);
 
     useEffect(() => {
         fetchCollections();
-        console.log(collections);
         if (editId) {
             setIsEditMode(true);
             fetchEntry(editId);

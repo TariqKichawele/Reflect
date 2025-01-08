@@ -5,35 +5,37 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getPixabayImage } from "./public";
 import { revalidatePath } from "next/cache";
+import aj from "@/lib/arcjet";
+import { request } from "@arcjet/next";
 
 export async function createJournalEntry(data) {
     try {
         const { userId } = await auth();
         if (!userId) throw new Error("Unauthorized");
 
-        // const req = await request();
+        const req = await request();
 
-        // const decision = await aj.protect(req, {
-        //     userId,
-        //     requested: 1
-        // });
+        const decision = await aj.protect(req, {
+            userId,
+            requested: 1
+        });
 
-        // if (decision.isDenied()) {
-        //     if (decision.reason.isRateLimit()) {
-        //         const { remaining, reset } = decision.reason;
-        //         console.error({
-        //             code: "RATE_LIMIT_EXCEEDED",
-        //             details: {
-        //                 remaining,
-        //                 resetInSeconds: reset,
-        //             }
-        //         });
+        if (decision.isDenied()) {
+            if (decision.reason.isRateLimit()) {
+                const { remaining, reset } = decision.reason;
+                console.error({
+                    code: "RATE_LIMIT_EXCEEDED",
+                    details: {
+                        remaining,
+                        resetInSeconds: reset,
+                    }
+                });
 
-        //         throw new Error("Rate limit exceeded");
-        //     }
+                throw new Error("Rate limit exceeded");
+            }
 
-        //     throw new Error("Unauthorized");
-        // }
+            throw new Error("Unauthorized");
+        }
 
         const user = await db.user.findUnique({
             where: { clerkUserId: userId },
