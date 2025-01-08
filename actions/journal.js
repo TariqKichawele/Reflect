@@ -2,7 +2,7 @@
 
 import { MOODS } from "@/app/lib/moods";
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/dist/types/server";
+import { auth } from "@clerk/nextjs/server";
 import { getPixabayImage } from "./public";
 import { revalidatePath } from "next/cache";
 
