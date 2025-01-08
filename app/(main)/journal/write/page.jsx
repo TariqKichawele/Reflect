@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import 'react-quill-new/dist/quill.snow.css';
 import dynamic from 'next/dynamic';
 import { useForm, Controller } from "react-hook-form";
@@ -12,9 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarLoader } from "react-spinners";
 import { getMoodById, MOODS } from "@/app/lib/moods";
 import useFetch from '@/hooks/useFetch';
-import { createJournalEntry } from '@/actions/journal';
-import { useRouter } from 'next/navigation';
+import { createJournalEntry, getDraft, getJournalEntry, saveDraft, updateJournalEntry } from '@/actions/journal';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { createCollection, getCollections } from '@/actions/collection';
+import CollectionForm from '@/components/CollectionForm';
+import { Loader2 } from 'lucide-react';
 
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {
@@ -23,11 +26,45 @@ const ReactQuill = dynamic(() => import('react-quill-new'), {
 
 const JournalEntry = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get("edit");
+    const [ isCollectionDialogOpen, setIsCollectionDialogOpen ] = useState(false);
+    const [ isEditMode, setIsEditMode ] = useState(false);
+
     const {
         loading: actionLoading,
         fn: actionFn,
         data: actionResult
-    } = useFetch(createJournalEntry);
+    } = useFetch(isEditMode ? updateJournalEntry : createJournalEntry);
+
+    const { 
+        loading: collectionsLoading,
+        data: collections,
+        fn: fetchCollections
+    } = useFetch(getCollections);
+
+    const {
+        loading: entryLoading,
+        data: exisitingEntry,
+        fn: fetchEntry
+    } = useFetch(getJournalEntry);
+
+    const {
+        loading: createCollectionLoading,
+        fn: createCollectionFn,
+        data: createdCollection
+    } = useFetch(createCollection);
+
+    const {
+        loading: draftLoading,
+        data: draftData,
+        fn: fetchDraft
+    } = useFetch(getDraft)
+
+    const {
+        loading: savingDraft,
+        fn: saveDraftFn
+    } = useFetch(saveDraft);
 
     const {
         register,
@@ -50,25 +87,95 @@ const JournalEntry = () => {
 
     useEffect(() => {
         if (actionResult && !actionLoading) {
-            router.push(`/collection/${actionResult.collectionId ? actionResult.collectionId : "unorganized"}`);
-        }
-        toast.success("Entry saved successfully");
+            if (!isEditMode) {
+                saveDraftFn({ title: "", content: "", mood: ""});
+            }
+
+            router.push(
+                `/collection/${actionResult.collectionId ? actionResult.collectionId : "unorganized"}`
+            )
+        };
+        toast.success(`Entry ${isEditMode ? "updated" : "created"} successfully`);
     }, [actionResult, actionLoading]);
 
-    const onSubmit = async (data) => {
+    useEffect(() => {
+        fetchCollections();
+        console.log(collections);
+        if (editId) {
+            setIsEditMode(true);
+            fetchEntry(editId);
+        } else {
+            setIsEditMode(false);
+        }
+    }, [editId]);
+
+    useEffect(() => {
+        if (isEditMode && exisitingEntry) {
+            reset({
+                title: exisitingEntry.title || "",
+                content: exisitingEntry.content || "",
+                mood: exisitingEntry.mood || "",
+                collectionId: exisitingEntry.collectionId || "",
+            });
+        } else if (draftData?.success && draftData?.data) {
+            reset({
+                title: draftData.data.title || "",
+                content: draftData.data.content || "",
+                mood: draftData.data.mood || "",
+                collectionId: draftData.data.collectionId || "",
+            });
+        } else {
+            reset({
+                title: "",
+                content: "",
+                mood: "",
+                collectionId: "",
+            });
+        }
+    }, [draftData, isEditMode, exisitingEntry])
+
+
+    useEffect(() => {
+        if (createdCollection) {
+            setIsCollectionDialogOpen(false);
+            fetchCollections();
+            setValue("collectionId", createdCollection.id);
+            toast.success(`Collection "${createdCollection.name}" created successfully`);
+        }
+    }, [createdCollection]);
+
+
+    const onSubmit = handleSubmit(async (data) => {
         const mood = getMoodById(data.mood);
         actionFn({ 
             ...data, 
             moodScore: mood.score,
             moodQuery: mood.pixabayQuery,
         });
+    });
+
+    const formData = watch();
+
+    const isLoading = 
+        collectionsLoading ||
+        entryLoading ||
+        draftLoading ||
+        actionLoading ||
+        savingDraft;
+    const handleSaveDraft = async() => {
+        if (!isDirty) {
+            toast.error("No changes made");
+            return;
+        }
+        const res = await saveDraftFn(formData);
+        if (res.success) {
+            toast.success("Draft saved successfully");
+        }
     };
 
-    const isEditMode = false;
-    const isLoading = actionLoading;
-    const savingDraft = false;
-    const collections = [];
-    const handleSaveDraft = () => {};
+    const handleCreateCollection = async (data) => {
+        await createCollectionFn(data)
+    }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -224,7 +331,12 @@ const JournalEntry = () => {
             </div>
         </form>
 
-        CollectionForm
+        <CollectionForm 
+            loading={createCollectionLoading}
+            onSuccess={handleCreateCollection}
+            open={isCollectionDialogOpen}
+            setOpen={setIsCollectionDialogOpen}
+        />
     </div>
   )
 }
