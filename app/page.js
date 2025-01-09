@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import faqs from '@/data/faqs.json'
 import { getDailyPrompt } from "@/actions/public"; 
+import TestimonialCarousel from "@/components/TestimonialCarousel";
 
 const features = [
   {
@@ -181,7 +182,7 @@ export default async function Home() {
       </div>
 
       {/* Testimonials Carousel */}
-      Testimonials  
+      <TestimonialCarousel /> 
 
       {/* FAQ Section */}
       <div className="mt-24">
